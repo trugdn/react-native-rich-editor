@@ -197,10 +197,10 @@ function createHTML(options = {}) {
             try {
                 var selection = window.getSelection();
                 if (anchorNode){
-                    if (anchorNode !== selection.anchorNode && !selection.containsNode(anchorNode)){
-                        _focusCollapse = true;
-                        selection.collapse(anchorNode, anchorOffset);
-                    }
+                    //if (anchorNode !== selection.anchorNode && !selection.containsNode(anchorNode)){
+                    //    _focusCollapse = true;
+                    //    selection.collapse(anchorNode, anchorOffset);
+                    //}
                 } else if(${firstFocusEnd} && !_focusCollapse ){
                     _focusCollapse = true;
                     selection.selectAllChildren(editor.content);
