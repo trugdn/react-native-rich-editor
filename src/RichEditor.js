@@ -341,7 +341,7 @@ export default class RichTextEditor extends Component {
     showAndroidKeyboard() {
         let that = this;
         if (Platform.OS === 'android') {
-            !that._keyOpen && that._input.focus();
+//             !that._keyOpen && that._input.focus();
             that.webviewBridge.requestFocus && that.webviewBridge.requestFocus();
         }
     }
