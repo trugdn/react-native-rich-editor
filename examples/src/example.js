@@ -22,7 +22,6 @@ import {actions, getContentCSS, RichEditor, RichToolbar} from 'react-native-pell
 import {XMath} from '@wxik/core';
 import {InsertLinkModal} from './insertLink';
 import {EmojiView} from './emoji';
-import {defaultActions} from '../../src';
 
 const imageList = [
     'https://img.lesmao.vip/k/h256/R/MeiTu/1293.jpg',
@@ -50,6 +49,7 @@ const htmlIcon = require('./assets/html.png');
 class Example extends React.Component {
     richText = React.createRef();
     linkModal = React.createRef();
+    scrollRef = React.createRef();
 
     constructor(props) {
         super(props);
@@ -88,7 +88,8 @@ class Example extends React.Component {
         Keyboard.removeListener('keyboardDidHide', this.onKeyHide);
     }
 
-    onKeyHide = () => {};
+    onKeyHide = () => {
+    };
 
     onKeyShow = () => {
         TextInput.State.currentlyFocusedInput() && this.setState({emojiVisible: false});
@@ -159,11 +160,11 @@ class Example extends React.Component {
         this.richText.current?.setFontSize(size[XMath.random(size.length - 1)]);
     };
 
-    foreColor = ()=> {
+    foreColor = () => {
         this.richText.current?.setForeColor('blue');
     }
 
-    hiliteColor = ()=> {
+    hiliteColor = () => {
         this.richText.current?.setHiliteColor('red');
     }
 
@@ -206,9 +207,10 @@ class Example extends React.Component {
         const contentStyle = {
             backgroundColor: '#2e3847',
             color: '#fff',
+            caretColor: 'red', // initial valid// initial valid
             placeholderColor: 'gray',
             // cssText: '#editor {background-color: #f3f3f3}', // initial valid
-            contentCSSText: 'font-size: 16px; min-height: 200px; height: 100%;', // initial valid
+            contentCSSText: 'font-size: 16px; min-height: 200px;', // initial valid
         };
         if (theme === 'light') {
             contentStyle.backgroundColor = '#fff';
@@ -267,15 +269,19 @@ class Example extends React.Component {
         this.editorFocus = false;
     };
 
+    handleCursorPosition = (scrollY) => {
+        // Positioning scroll bar
+        this.scrollRef.current.scrollTo({y: scrollY - 30, animated: true});
+    }
+
     render() {
         let that = this;
         const {contentStyle, theme, emojiVisible, disabled} = that.state;
         const {backgroundColor, color, placeholderColor} = contentStyle;
         const dark = theme === 'dark';
-        console.log('render');
         return (
             <SafeAreaView style={[styles.container, dark && styles.darkBack]}>
-                <StatusBar barStyle={theme !== 'dark' ? 'dark-content' : 'light-content'} />
+                <StatusBar barStyle={theme !== 'dark' ? 'dark-content' : 'light-content'}/>
                 <InsertLinkModal
                     placeholderColor={placeholderColor}
                     color={color}
@@ -284,10 +290,11 @@ class Example extends React.Component {
                     ref={that.linkModal}
                 />
                 <View style={styles.nav}>
-                    <Button title={'HOME'} onPress={that.onHome} />
-                    <Button title="Preview" onPress={that.save} />
+                    <Button title={'HOME'} onPress={that.onHome}/>
+                    <Button title="Preview" onPress={that.save}/>
                 </View>
-                <ScrollView style={[styles.scroll, dark && styles.scrollDark]} keyboardDismissMode={'none'}>
+                <ScrollView style={[styles.scroll, dark && styles.scrollDark]} keyboardDismissMode={'none'}
+                            ref={that.scrollRef} scrollEventThrottle={20}>
                     <View style={[styles.topVi, dark && styles.darkBack]}>
                         <View style={styles.item}>
                             <Text style={{color}}>To: </Text>
@@ -308,8 +315,8 @@ class Example extends React.Component {
                             />
                         </View>
                         <View style={styles.item}>
-                            <Button title={theme} onPress={that.onTheme} />
-                            <Button title={disabled ? 'enable' : 'disable'} onPress={that.onDisabled} />
+                            <Button title={theme} onPress={that.onTheme}/>
+                            <Button title={disabled ? 'enable' : 'disable'} onPress={that.onDisabled}/>
                         </View>
                     </View>
                     <RichToolbar
@@ -328,6 +335,8 @@ class Example extends React.Component {
                         editorStyle={contentStyle} // default light style
                         ref={that.richText}
                         style={styles.rich}
+                        useContainer={true}
+                        initialHeight={400}
                         // containerStyle={{borderRadius: 24}}
                         placeholder={'please input content'}
                         initialContentHTML={initHTML}
@@ -340,6 +349,7 @@ class Example extends React.Component {
                         onMessage={that.handleMessage}
                         onFocus={that.handleFocus}
                         onBlur={that.handleBlur}
+                        onCursorPosition={that.handleCursorPosition}
                         pasteAsPlainText={true}
                     />
                 </ScrollView>
@@ -402,7 +412,7 @@ class Example extends React.Component {
                         foreColor={that.foreColor}
                         hiliteColor={that.hiliteColor}
                     />
-                    {emojiVisible && <EmojiView onSelect={that.insertEmoji} />}
+                    {emojiVisible && <EmojiView onSelect={that.insertEmoji}/>}
                 </KeyboardAvoidingView>
             </SafeAreaView>
         );
@@ -422,6 +432,8 @@ const styles = StyleSheet.create({
     rich: {
         minHeight: 300,
         flex: 1,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderColor: '#e3e3e3'
     },
     topVi: {
         backgroundColor: '#fafafa',

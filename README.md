@@ -23,6 +23,13 @@ Also, follow instructions [here](https://github.com/react-native-community/react
 
 ![](readme/editor.jpg)
 
+---
+## Scroll problem
+###`usecontainer = {true}` Need to be placed in ScrolView and add a callback method `oncursorPosition` to handle scroll bar positioning, refer to Examples
+```this.scrollRef.current.scrollTo({y: scrollY - 30, animated: true});```
+
+---
+
 ## `RichEditor`
 The editor component. Simply place this component in your view hierarchy to receive a fully functional Rich text Editor.
 
@@ -52,6 +59,7 @@ The editor component. Simply place this component in your view hierarchy to rece
 
 	- `backgroundColor`: Editor background color
 	- `color`: Editor text color
+    - `caretColor` cursor/selection color
 	- `placeholderColor`: Editor placeholder text color
 	- `contentCSSText`: editor content css text（initial valid）
 	- `cssText`: editor global css text（initial valid）
@@ -105,6 +113,10 @@ The editor component. Simply place this component in your view hierarchy to rece
 
 * `onBlur`
   Callback editor blur
+
+* `onCursorPosition`
+  Callback Enter the position of the cursor
+  ```this.scrollRef.current.scrollTo({y: scrollY - 30, duration: 100, animated: true});```
 
 `RichEditor` also has methods that can be used on its `ref` to  set:
 

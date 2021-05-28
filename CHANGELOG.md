@@ -1,4 +1,19 @@
 
+#1.8.3
+###Fix
+- Fix Some input methods appear on the screen in English  [#154](https://github.com/wxik/react-native-rich-editor/issues/154)
+- Fix The cursor positioning problem after getting the focus in the `ScrollView`
+
+#1.8.1
+### Fix
+- Fix the problem that `initialHeight` does not take effect
+- Fix the problem that the `height` does not decrease after the text content is reduced
+
+### Tips
+- `useContainer = true` Need to implement `onCursorPosition` and handle focus scrolling. Refer to examples
+- The `height` setting will not be less than `initialHeight`
+
+
 #1.8.0
 
 ### This version merges with netizens to provide PR, thank you very much
@@ -6,6 +21,8 @@
 ### Added
 - `foreColor` & `hiliteColor`
 - Add @1x resources to solve the problem that some user resources are not found
+- Add `onCursorPosition` Enter the position of the cursor
+- Add `caretColor` cursor/selection color
 
 #1.7.0
 ### Added
