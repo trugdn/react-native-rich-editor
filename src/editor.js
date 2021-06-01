@@ -419,7 +419,7 @@ function createHTML(options = {}) {
             content.className = "pell-content";
             content.oninput = function (_ref) {
                 // var firstChild = _ref.target.firstChild;
-                if ((anchorNode === void 0 || anchorNode === content) && queryCommandValue(formatBlock) === ''){
+                if ((!anchorNode || anchorNode === void 0 || anchorNode === content) && queryCommandValue(formatBlock) === ''){
                     if ( !compositionStatus ){
                         formatParagraph(true);
                         paragraphStatus = 0;
