@@ -87,6 +87,12 @@ export interface RichEditorProps extends WebViewProps {
     onKeyDown?: ({keyCode: number, key: string}) => void;
 
     /**
+     * Callback input chat
+     * Android and iOS inputType are not the same
+     */
+    onInput?: ({data: string, inputType: string}) => void;
+
+    /**
      * Callback when the editor focus some content
      */
     onFocus?: () => void;
@@ -123,6 +129,7 @@ export interface RichEditorProps extends WebViewProps {
         caretColor?: string; // cursor/selection color
         placeholderColor?: string; // editor placeholder text color
         contentCSSText?: string; // editor content css text
+        initialCSSText?: string; // editor global css initial text
         cssText?: string; // editor global css text
     };
 }
@@ -177,6 +184,8 @@ export class RichEditor extends React.Component<RichEditorProps> {
     insertText: (text: string) => void;
 
     insertHTML: (html: string) => void;
+
+    preCode: (type: string) => void;
 
     /**
      * 1 = 10px, 2 = 13px, 3 = 16px, 4 = 18px, 5 = 24px, 6 = 32px, 7 = 48px;
@@ -262,6 +271,11 @@ export interface RichToolbarProps {
      * Custom style prop for the toolbar
      */
     style?: StyleProp<ViewStyle>;
+
+    /**
+     * Flat container style prop for the toolbar
+     */
+    flatContainerStyle?: StyleProp<ViewStyle>;
 
     /**
      * Your own set if images for the toolbar

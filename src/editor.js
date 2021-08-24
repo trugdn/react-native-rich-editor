@@ -12,7 +12,8 @@ function getContentCSS() {
         .x-todo-box input{position: absolute;}
         blockquote{border-left: 6px solid #ddd;padding: 5px 0 5px 10px;margin: 15px 0 15px 15px;}
         hr{display: block;height: 0; border: 0;border-top: 1px solid #ccc; margin: 15px 0; padding: 0;}
-        pre{padding: 10px 5px 10px 10px;margin: 15px 0;display: block;line-height: 18px;background: #F0F0F0;border-radius: 3px;font-size: 13px; font-family: 'monaco', 'Consolas', "Liberation Mono", Courier, monospace; white-space: pre; word-wrap: normal;overflow-x: auto;}
+        pre{padding: 10px 5px 10px 10px;margin: 15px 0;display: block;line-height: 18px;background: #F0F0F0;border-radius: 6px;font-size: 13px; font-family: 'monaco', 'Consolas', "Liberation Mono", Courier, monospace; word-break: break-all; word-wrap: break-word;overflow-x: auto;}
+        pre code {display: block;font-size: inherit;white-space: pre-wrap;color: inherit;}
     </style>
     `;
 }
@@ -25,11 +26,14 @@ function createHTML(options = {}) {
         placeholderColor = '#a9a9a9',
         contentCSSText = '',
         cssText = '',
+        initialCSSText = '',
         pasteAsPlainText = false,
         pasteListener = false,
         keyDownListener = false,
         keyUpListener = false,
+        inputListener = false,
         autoCapitalize = 'off',
+        autoCorrect = false,
         defaultParagraphSeparator = 'div',
         // When first gaining focus, the cursor moves to the end of the text
         firstFocusEnd = true,
@@ -43,10 +47,11 @@ function createHTML(options = {}) {
     <title>RN Rich Text Editor</title>
     <meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
     <style>
+        ${initialCSSText}
         * {outline: 0px solid transparent;-webkit-tap-highlight-color: rgba(0,0,0,0);-webkit-touch-callout: none;box-sizing: border-box;}
         html, body { margin: 0; padding: 0;font-family: Arial, Helvetica, sans-serif; font-size:1em; height: 100%}
         body { overflow-y: hidden; -webkit-overflow-scrolling: touch;background-color: ${backgroundColor};caret-color: ${caretColor};}
-        .content {font-family: Arial, Helvetica, sans-serif;color: ${color}; width: 100%;-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
+        .content {font-family: Arial, Helvetica, sans-serif;color: ${color}; width: 100%;${!useContainer ? 'height:100%;' : ''}-webkit-overflow-scrolling: touch;padding-left: 0;padding-right: 0;}
         .pell { height: 100%;} .pell-content { outline: 0; overflow-y: auto;padding: 10px;height: 100%;${contentCSSText}}
     </style>
     <style>
@@ -72,7 +77,7 @@ function createHTML(options = {}) {
         var body = document.body, docEle = document.documentElement;
         var defaultParagraphSeparatorString = 'defaultParagraphSeparator';
         var formatBlock = 'formatBlock';
-        var editor = null, editorFoucs = false, o_height = 0, compositionStatus = 0, paragraphStatus = 0;
+        var editor = null, editorFoucs = false, o_height = 0, compositionStatus = 0, paragraphStatus = 0, enterStatus = 0;
         function addEventListener(parent, type, listener) {
             return parent.addEventListener(type, listener);
         };
@@ -266,7 +271,20 @@ function createHTML(options = {}) {
                 state: function() { return queryCommandState('insertUnorderedList');},
                 result: function() { if (!!checkboxNode(window.getSelection().anchorNode)) return; return exec('insertUnorderedList');}
             },
-            code: { result: function() { return exec(formatBlock, '<pre>'); }},
+            code: { result: function(type) {
+                var flag = exec(formatBlock, '<pre>');
+                var node = anchorNode.nodeName === "PRE" ? anchorNode: anchorNode.parentNode;
+                if (node.nodeName === 'PRE'){
+                    type && node.setAttribute("type", type);
+                    node.innerHTML = "<code type='"+(type || '') +"'>" + node.innerHTML + "</code>";
+                    // var br = createElement("br");
+                    // node.parentNode.insertBefore(br, node.nextSibling);
+                    setTimeout(function (){
+                        setCollapse(node.firstChild);
+                    });
+                }
+                return flag;
+             }},
             line: { result: function() { return exec('insertHorizontalRule'); }},
             redo: { result: function() { return exec('redo'); }},
             undo: { result: function() { return exec('undo'); }},
@@ -343,7 +361,7 @@ function createHTML(options = {}) {
             },
             content: {
                 setDisable: function(dis){ this.blur(); editor.content.contentEditable = !dis},
-                setHtml: function(html) { editor.content.innerHTML = html; },
+                setHtml: function(html) { editor.content.innerHTML = html; Actions.UPDATE_HEIGHT(); },
                 getHtml: function() { return editor.content.innerHTML; },
                 blur: function() { editor.content.blur(); },
                 focus: function() { focusCurrent(); },
@@ -381,7 +399,8 @@ function createHTML(options = {}) {
                     // setInterval(Actions.UPDATE_HEIGHT, 150);
                     Actions.UPDATE_HEIGHT();
                 } else {
-                    body.style.height = docEle.clientHeight + 'px';
+                    // react-native-webview There is a bug in the body and html height setting of a certain version of 100%
+                    // body.style.height = docEle.clientHeight + 'px';
                 }
             },
 
@@ -414,7 +433,7 @@ function createHTML(options = {}) {
             content.contentEditable = true;
             content.spellcheck = false;
             content.autocapitalize = '${autoCapitalize}';
-            content.autocorrect = 'off';
+            content.autocorrect = ${autoCorrect};
             content.autocomplete = 'off';
             content.className = "pell-content";
             content.oninput = function (_ref) {
@@ -426,11 +445,16 @@ function createHTML(options = {}) {
                     } else {
                         paragraphStatus = 1;
                     }
-                } else if (content.innerHTML === '<br>') content.innerHTML = '';
+                } else if (content.innerHTML === '<br>'){
+                     content.innerHTML = '';
+                } else if (enterStatus && queryCommandValue(formatBlock) === 'blockquote') {
+                    formatParagraph();
+                }
 
                 saveSelection();
                 handleChange(_ref);
                 settings.onChange();
+                ${inputListener} && postAction({type: "ON_INPUT", data: {inputType: _ref.inputType, data: _ref.data}});
             };
             appendChild(settings.element, content);
 
@@ -472,6 +496,7 @@ function createHTML(options = {}) {
                 postAction({type: type, data: {keyCode: event.keyCode, key: event.key}});
             }
             function handleKeyup(event){
+                enterStatus = 0;
                 _keyDown = false;
                 if (event.keyCode === 8) handleSelecting (event);
                 ${keyUpListener} && postKeyAction(event, "CONTENT_KEYUP")
@@ -480,11 +505,10 @@ function createHTML(options = {}) {
                 _keyDown = true;
                  handleState();
                 if (event.key === 'Enter'){
+                    enterStatus = 1; // set enter true
                     var box;
-                    if (queryCommandValue(formatBlock) === 'blockquote'){
-                        console.log('delete?: Enter -> blockquote')
-                        // formatParagraph(true);
-                    } else  if (anchorNode.innerHTML === '<br>' && anchorNode.parentNode !== editor.content){
+                    var block = queryCommandValue(formatBlock);
+                    if (anchorNode.innerHTML === '<br>' && anchorNode.parentNode !== editor.content){
                         // setCollapse(editor.content);
                     } else if (queryCommandState('insertOrderedList') && !!(box = checkboxNode(anchorNode))){
                         var node = anchorNode && anchorNode.childNodes[1];
@@ -494,6 +518,18 @@ function createHTML(options = {}) {
                         } else{
                             // add checkbox
                             _checkboxFlag = 1;
+                        }
+                    }
+                    if (block === 'pre' && anchorNode.innerHTML === '<br>'){
+                        // code end enter new line (Unfinished)
+                        if (!anchorNode.nextSibling){
+                            event.preventDefault();
+                            var node = anchorNode.parentNode;
+                            var br = createElement("br");
+                            node.parentNode.insertBefore(br, node.nextSibling);
+                            setTimeout(function (){
+                                setCollapse(br);
+                            });
                         }
                     }
                 }
@@ -539,10 +575,10 @@ function createHTML(options = {}) {
                     exec("insertText", text);
                 }
             });
-            addEventListener(content, 'compositionstart', function(){
+            addEventListener(content, 'compositionstart', function(event){
                 compositionStatus = 1;
             })
-            addEventListener(content, 'compositionend', function (){
+            addEventListener(content, 'compositionend', function (event){
                 compositionStatus = 0;
                 paragraphStatus && formatParagraph(true);
             })

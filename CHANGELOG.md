@@ -1,5 +1,20 @@
 
-#1.8.3
+#1.8.6
+### Changed
+- Add `autoCorrect` props of default false
+### PR
+- [initialCSSText](https://github.com/wxik/react-native-rich-editor/pull/111)
+### Added
+- `onInput` callback input value
+### Fix
+- Fix `blockquote` Enter new line
+
+#1.8.4 - 1.8.5
+###Fix
+- Fix code wrapping
+- Fix `useContainer = false` scroll
+
+#1.8.2 - 1.8.3
 ###Fix
 - Fix Some input methods appear on the screen in English  [#154](https://github.com/wxik/react-native-rich-editor/issues/154)
 - Fix The cursor positioning problem after getting the focus in the `ScrollView`

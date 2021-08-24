@@ -52,13 +52,15 @@ export default class RichTextEditor extends Component {
         that.layout = {};
         that.selectionChangeListeners = [];
         const {
-            editorStyle: {backgroundColor, color, placeholderColor, cssText, contentCSSText, caretColor} = {},
+            editorStyle: {backgroundColor, color, placeholderColor, initialCSSText, cssText, contentCSSText, caretColor} = {},
             html,
             pasteAsPlainText,
             onPaste,
             onKeyUp,
             onKeyDown,
+            onInput,
             autoCapitalize,
+            autoCorrect,
             defaultParagraphSeparator,
             firstFocusEnd,
             useContainer,
@@ -73,13 +75,16 @@ export default class RichTextEditor extends Component {
                         color,
                         caretColor,
                         placeholderColor,
+                        initialCSSText,
                         cssText,
                         contentCSSText,
                         pasteAsPlainText,
                         pasteListener: !!onPaste,
                         keyUpListener: !!onKeyUp,
                         keyDownListener: !!onKeyDown,
+                        inputListener: !!onInput,
                         autoCapitalize,
+                        autoCorrect,
                         defaultParagraphSeparator,
                         firstFocusEnd,
                         useContainer,
@@ -107,7 +112,7 @@ export default class RichTextEditor extends Component {
     }
 
     componentWillUnmount() {
-        this.keyboardEventListeners.forEach((eventListener) => eventListener.remove());
+        this.keyboardEventListeners.forEach(eventListener => eventListener.remove());
     }
 
     _onKeyboardWillShow(event) {
@@ -139,11 +144,7 @@ export default class RichTextEditor extends Component {
 
     onMessage(event) {
         const that = this;
-        const {
-            onFocus, onBlur, onChange, onPaste,
-            onKeyUp, onKeyDown, onMessage,
-            onCursorPosition,
-        } = that.props;
+        const {onFocus, onBlur, onChange, onPaste, onKeyUp, onKeyDown, onInput, onMessage, onCursorPosition} = that.props;
         try {
             const message = JSON.parse(event.nativeEvent.data);
             const data = message.data;
@@ -164,13 +165,13 @@ export default class RichTextEditor extends Component {
                     break;
                 case messages.SELECTION_CHANGE:
                     const items = message.data;
-                    that.selectionChangeListeners.map((listener) => {
+                    that.selectionChangeListeners.map(listener => {
                         listener(items);
                     });
                     break;
                 case messages.CONTENT_FOCUSED:
                     that._focus = true;
-                    that.focusListeners.map((da) => da()); // Subsequent versions will be deleted
+                    that.focusListeners.map(da => da()); // Subsequent versions will be deleted
                     onFocus?.();
                     break;
                 case messages.CONTENT_BLUR:
@@ -189,11 +190,14 @@ export default class RichTextEditor extends Component {
                 case messages.CONTENT_KEYDOWN:
                     onKeyDown?.(data);
                     break;
+                case messages.ON_INPUT:
+                    onInput?.(data);
+                    break;
                 case messages.OFFSET_HEIGHT:
                     that.setWebHeight(data);
                     break;
                 case messages.OFFSET_Y:
-                    let offsetY = Number.parseInt(Number.parseInt(data) + that.layout.y);
+                    let offsetY = Number.parseInt(Number.parseInt(data) + that.layout.y || 0);
                     offsetY > 0 && onCursorPosition(offsetY);
                     break;
                 default:
@@ -205,16 +209,16 @@ export default class RichTextEditor extends Component {
         }
     }
 
-    setWebHeight (height) {
+    setWebHeight(height) {
         const {onHeightChange, useContainer, initialHeight} = this.props;
         if (height !== this.state.height) {
             const maxHeight = Math.max(height, initialHeight);
-            if (useContainer && maxHeight >= initialHeight){
+            if (useContainer && maxHeight >= initialHeight) {
                 this.setState({height: maxHeight});
             }
             onHeightChange && onHeightChange(height);
         }
-    };
+    }
 
     /**
      * @param {String} type
@@ -257,6 +261,7 @@ export default class RichTextEditor extends Component {
                     scrollEnabled={false}
                     hideKeyboardAccessoryView={true}
                     keyboardDisplayRequiresUserAction={false}
+                    nestedScrollEnabled={!useContainer}
                     {...rest}
                     ref={that.setRef}
                     onMessage={that.onMessage}
@@ -269,12 +274,12 @@ export default class RichTextEditor extends Component {
                     opacity={opacity}
                     onLoad={that.init}
                 />
-                {Platform.OS === 'android' && <TextInput ref={(ref) => (that._input = ref)} style={styles._input}/>}
+                {Platform.OS === 'android' && <TextInput ref={ref => (that._input = ref)} style={styles._input} />}
             </>
         );
     }
 
-    onViewLayout ({nativeEvent: { layout}}) {
+    onViewLayout({nativeEvent: {layout}}) {
         // const {x, y, width, height} = layout;
         this.layout = layout;
     }
@@ -287,7 +292,9 @@ export default class RichTextEditor extends Component {
         // If set to false, it will not use a View wrapper
         const {useContainer, style} = this.props;
         return useContainer ? (
-            <View style={[style, {height}]} onLayout={this.onViewLayout}>{this.renderWebView()}</View>
+            <View style={[style, {height}]} onLayout={this.onViewLayout}>
+                {this.renderWebView()}
+            </View>
         ) : (
             this.renderWebView()
         );
@@ -375,6 +382,10 @@ export default class RichTextEditor extends Component {
             this.showAndroidKeyboard();
             this.sendAction(actions.insertLink, 'result', {title, url});
         }
+    }
+
+    preCode(type) {
+        this.sendAction(actions.code, 'result', type);
     }
 
     setFontSize(size) {
